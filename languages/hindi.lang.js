@@ -1,5 +1,5 @@
 import { setDtmfUser } from "../index.js";
-// import { person1 } from "../middlewares/getPerson.middleware.js";
+// import { getPerson } from "../middlewares/getPerson.middleware.js";
 import { actionUrl } from "../index.js";
 import { setUserChoice } from "../utilities/choices.js";
 import { getAadhaarRefIDDetail } from "../index.js";
@@ -7,15 +7,15 @@ import { getAdhaarDetailsOtpUpdate } from "../index.js";
 import { deleteAadhaarDocument } from "../index.js";
 import numberToWords from "number-to-words";
 
-export async function getDtmf(dtmf, person1) {
+export async function getDtmf(dtmf, getPerson) {
   if (dtmf === "1" || dtmf === "") {
-    await setDtmfUser("dtmf2", person1);
-    await setUserChoice("hindi", person1);
-    // const loanAmtSpoken = toSpokenNumber(person1?.loanAmt || 0);
-    // const pendingAmtSpoken = toSpokenNumber(person1?.pendingAmt || 0);
-    const loanAmtStr=numberToWords.toWords(+person1.loanAmt).split(" ").join(".....");
-    const pendingAmtStr=numberToWords.toWords(+person1.pendingAmt).split(" ").join(".....");
-    const organizationStr=person1.organization.split(" ").join(".....");
+    await setDtmfUser("dtmf2", getPerson);
+    await setUserChoice("hindi", getPerson);
+    // const loanAmtSpoken = toSpokenNumber(getPerson?.loanAmt || 0);
+    // const pendingAmtSpoken = toSpokenNumber(getPerson?.pendingAmt || 0);
+    const loanAmtStr=numberToWords.toWords(+getPerson.loanAmt).split(" ").join(".....");
+    const pendingAmtStr=numberToWords.toWords(+getPerson.pendingAmt).split(" ").join(".....");
+    const organizationStr=getPerson.organization.split(" ").join(".....");
     console.log(loanAmtStr, "loanAmtArr hindi.lang");
     console.log(pendingAmtStr, "pendingAmtArr hindi.lang");
     return [
@@ -61,15 +61,15 @@ export async function getDtmf(dtmf, person1) {
       },
     ];
   } else {
-    await setDtmfUser("dtmf1", person1);
-    return getDtmf("1", person1);
+    await setDtmfUser("dtmf1", getPerson);
+    return getDtmf("1", getPerson);
   }
 }
 
-export async function getDtmf2(dtmf, person1) {
+export async function getDtmf2(dtmf, getPerson) {
   if (dtmf == "1") {
-    await setDtmfUser("dtmf3", person1);
-    await setUserChoice("Financial Loss", person1);
+    await setDtmfUser("dtmf3", getPerson);
+    await setUserChoice("Financial Loss", getPerson);
 
     return [
       {
@@ -88,7 +88,7 @@ export async function getDtmf2(dtmf, person1) {
     dtmf == "5" ||
     dtmf == "6"
   ) {
-    await setDtmfUser("dtmf4", person1);
+    await setDtmfUser("dtmf4", getPerson);
     let userChoice = "";
     switch (dtmf) {
       case "2":
@@ -109,7 +109,7 @@ export async function getDtmf2(dtmf, person1) {
       default:
         break;
     }
-    await setUserChoice(userChoice, person1);
+    await setUserChoice(userChoice, getPerson);
     return [
       {
         action: "play_get_input",
@@ -121,15 +121,15 @@ export async function getDtmf2(dtmf, person1) {
       },
     ];
   } else {
-    await setDtmfUser("dtmf2", person1);
-    return getDtmf2("1", person1);
+    await setDtmfUser("dtmf2", getPerson);
+    return getDtmf2("1", getPerson);
   }
 }
 
-export async function getDtmf3(dtmf, person1) {
+export async function getDtmf3(dtmf, getPerson) {
   if (dtmf === "1") {
-    await setDtmfUser("dtmf41", person1);
-    await setUserChoice("business loss", person1);
+    await setDtmfUser("dtmf41", getPerson);
+    await setUserChoice("business loss", getPerson);
 
     return [
       {
@@ -142,8 +142,8 @@ export async function getDtmf3(dtmf, person1) {
       },
     ];
   } else if (dtmf === "2") {
-    await setDtmfUser("dtmf42", person1);
-    await setUserChoice("Job loss", person1);
+    await setDtmfUser("dtmf42", getPerson);
+    await setUserChoice("Job loss", getPerson);
     return [
       {
         action: "play_get_input",
@@ -155,9 +155,9 @@ export async function getDtmf3(dtmf, person1) {
       },
     ];
   } else if (dtmf === "3" || dtmf === "4") {
-    await setDtmfUser("dtmf4", person1);
+    await setDtmfUser("dtmf4", getPerson);
     let userChoice = dtmf === "3" ? "Health Issue" : "Death of Earning Member";
-    await setUserChoice(userChoice, person1);
+    await setUserChoice(userChoice, getPerson);
     return [
       {
         action: "play_get_input",
@@ -170,7 +170,7 @@ export async function getDtmf3(dtmf, person1) {
     ];
   } else if (dtmf == "9") {
     console.log("FinancialContraints worked");
-    await setDtmfUser("dtmf2", person1);
+    await setDtmfUser("dtmf2", getPerson);
     return [
       {
         action: "play_get_input",
@@ -182,14 +182,14 @@ export async function getDtmf3(dtmf, person1) {
       },
     ];
   } else {
-    await setDtmfUser("dtmf3", person1);
-    return getDtmf2("1" || "0", person1);
+    await setDtmfUser("dtmf3", getPerson);
+    return getDtmf2("1" || "0", getPerson);
   }
 }
 
-export async function getDtmf4Sec1(dtmf, person1) {
+export async function getDtmf4Sec1(dtmf, getPerson) {
   if (dtmf === "1" || dtmf === "2" || dtmf === "3") {
-    await setDtmfUser("dtmf4", person1);
+    await setDtmfUser("dtmf4", getPerson);
     let userChoice = "";
     switch (dtmf) {
       case "1":
@@ -204,7 +204,7 @@ export async function getDtmf4Sec1(dtmf, person1) {
       default:
         break;
     }
-    await setUserChoice(userChoice, person1);
+    await setUserChoice(userChoice, getPerson);
     return [
       {
         action: "play_get_input",
@@ -216,7 +216,7 @@ export async function getDtmf4Sec1(dtmf, person1) {
       },
     ];
   } else if (dtmf === "9") {
-    await setDtmfUser("dtmf3", person1);
+    await setDtmfUser("dtmf3", getPerson);
     console.log("FinancialLoss Worked");
     return [
       {
@@ -229,7 +229,7 @@ export async function getDtmf4Sec1(dtmf, person1) {
       },
     ];
   } else if (dtmf === "8") {
-    await setDtmfUser("dtmf2", person1);
+    await setDtmfUser("dtmf2", getPerson);
     return [
       {
         action: "play_get_input",
@@ -241,14 +241,14 @@ export async function getDtmf4Sec1(dtmf, person1) {
       },
     ]
   } else {
-    await setDtmfUser("dtmf41", person1);
-    return getDtmf3("1", person1);
+    await setDtmfUser("dtmf41", getPerson);
+    return getDtmf3("1", getPerson);
   }
 }
 
-export async function getDtmf4Sec2(dtmf, person1) {
+export async function getDtmf4Sec2(dtmf, getPerson) {
   if (dtmf === "1" || dtmf === "2" || dtmf === "3" || dtmf === "4") {
-    await setDtmfUser("dtmf4", person1);
+    await setDtmfUser("dtmf4", getPerson);
     let userChoice = "";
     switch (dtmf) {
       case "1":
@@ -266,7 +266,7 @@ export async function getDtmf4Sec2(dtmf, person1) {
       default:
         break;
     }
-    await setUserChoice(userChoice, person1);
+    await setUserChoice(userChoice, getPerson);
     return [
       {
         action: "play_get_input",
@@ -278,7 +278,7 @@ export async function getDtmf4Sec2(dtmf, person1) {
       },
     ];
   } else if (dtmf === "9") {
-    await setDtmfUser("dtmf3", person1);
+    await setDtmfUser("dtmf3", getPerson);
     console.log("FinancialLoss Worked");
     return [
       {
@@ -291,7 +291,7 @@ export async function getDtmf4Sec2(dtmf, person1) {
       },
     ];
   } else if (dtmf === "8") {
-    await setDtmfUser("dtmf2", person1);
+    await setDtmfUser("dtmf2", getPerson);
     return [
       {
         action: "play_get_input",
@@ -303,16 +303,16 @@ export async function getDtmf4Sec2(dtmf, person1) {
       },
     ]
   } else {
-    await setDtmfUser("dtmf42", person1);
-    return getDtmf3("2", person1);
+    await setDtmfUser("dtmf42", getPerson);
+    return getDtmf3("2", getPerson);
   }
 }
 
-export async function getDtmf5(dtmf, person1) {
+export async function getDtmf5(dtmf, getPerson) {
   if (dtmf === "1") {
-    await setDtmfUser("dtmf51", person1);
-    // await setDtmfUser("dtmf1", person1);
-    await setUserChoice("Settlement: Yes", person1);
+    await setDtmfUser("dtmf51", getPerson);
+    // await setDtmfUser("dtmf1", getPerson);
+    await setUserChoice("Settlement: Yes", getPerson);
     return [
       {
         action: "play_get_input",
@@ -324,8 +324,8 @@ export async function getDtmf5(dtmf, person1) {
       },
     ];
   } else if (dtmf === "2") {
-    await setDtmfUser("dtmf52", person1);
-    await setUserChoice("Settlement: No", person1);
+    await setDtmfUser("dtmf52", getPerson);
+    await setUserChoice("Settlement: No", getPerson);
     return [
       {
         action: "play_get_input",
@@ -337,8 +337,8 @@ export async function getDtmf5(dtmf, person1) {
       },
     ];
   } else if (dtmf === "3") {
-    await setDtmfUser("dtmf5", person1);
-    await setUserChoice("Settlement: Unable to pay", person1);
+    await setDtmfUser("dtmf5", getPerson);
+    await setUserChoice("Settlement: Unable to pay", getPerson);
     return [
       {
         action: "play",
@@ -364,7 +364,7 @@ export async function getDtmf5(dtmf, person1) {
       },
     ];
   } else if (dtmf === "9") {
-    await setDtmfUser("dtmf3", person1);
+    await setDtmfUser("dtmf3", getPerson);
     console.log("FinancialLoss Worked");
     return [
       {
@@ -377,14 +377,14 @@ export async function getDtmf5(dtmf, person1) {
       },
     ];
   } else {
-    await setDtmfUser("dtmf3", person1);
-    return getDtmf2("1", person1);
+    await setDtmfUser("dtmf3", getPerson);
+    return getDtmf2("1", getPerson);
   }
 }
 
-export async function getDtmf5Sec1(dtmf, person1) {
+export async function getDtmf5Sec1(dtmf, getPerson) {
   if (dtmf >= "1" && dtmf <= "7") {
-    await setDtmfUser("dtmf53", person1);
+    await setDtmfUser("dtmf53", getPerson);
     let userChoice = "";
     switch (dtmf) {
       case "1":
@@ -411,7 +411,7 @@ export async function getDtmf5Sec1(dtmf, person1) {
       default:
         break;
     }
-    await setUserChoice(userChoice, person1);
+    await setUserChoice(userChoice, getPerson);
 
     return [
       {
@@ -424,7 +424,7 @@ export async function getDtmf5Sec1(dtmf, person1) {
       },
     ];
   } else if (dtmf === "9") {
-    await setDtmfUser("dtmf4", person1);
+    await setDtmfUser("dtmf4", getPerson);
     return [
       {
         action: "play_get_input",
@@ -436,15 +436,15 @@ export async function getDtmf5Sec1(dtmf, person1) {
       },
     ];
   } else {
-    await setDtmfUser("dtmf51", person1);
-    return getDtmf5("1", person1);
+    await setDtmfUser("dtmf51", getPerson);
+    return getDtmf5("1", getPerson);
   }
 }
 
-export async function getDtmf5Sec2(dtmf, person1) {
+export async function getDtmf5Sec2(dtmf, getPerson) {
   if (dtmf === "1") {
-    await setDtmfUser("dtmf5", person1);
-    await setUserChoice("Want 3 equal installments", person1);
+    await setDtmfUser("dtmf5", getPerson);
+    await setUserChoice("Want 3 equal installments", getPerson);
     // await setChoice("update")
     return [
       {
@@ -466,8 +466,8 @@ export async function getDtmf5Sec2(dtmf, person1) {
       },
     ];
   } else if (dtmf === "2") {
-    await setDtmfUser("dtmf5", person1);
-    await setUserChoice("Don't want 3 equal installment", person1);
+    await setDtmfUser("dtmf5", getPerson);
+    await setUserChoice("Don't want 3 equal installment", getPerson);
     return [
       {
         action: "play",
@@ -488,7 +488,7 @@ export async function getDtmf5Sec2(dtmf, person1) {
       },
     ];
   } else if (dtmf === "9") {
-    await setDtmfUser("dtmf4", person1);
+    await setDtmfUser("dtmf4", getPerson);
     return [
       {
         action: "play_get_input",
@@ -500,15 +500,15 @@ export async function getDtmf5Sec2(dtmf, person1) {
       },
     ];
   } else {
-    await setDtmfUser("dtmf52", person1);
-    return getDtmf5("2", person1);
+    await setDtmfUser("dtmf52", getPerson);
+    return getDtmf5("2", getPerson);
   }
 }
 
-export async function getDtmf5Sec3(dtmf, person1) {
+export async function getDtmf5Sec3(dtmf, getPerson) {
   if (dtmf === "1") {
-    await setDtmfUser("dtmf5", person1);
-    await setUserChoice("One-Time", person1);
+    await setDtmfUser("dtmf5", getPerson);
+    await setUserChoice("One-Time", getPerson);
     return [
       {
         action: "play",
@@ -529,8 +529,8 @@ export async function getDtmf5Sec3(dtmf, person1) {
       },
     ];
   } else if (dtmf === "2") {
-    await setDtmfUser("dtmf5", person1);
-    await setUserChoice("No One-Time", person1);
+    await setDtmfUser("dtmf5", getPerson);
+    await setUserChoice("No One-Time", getPerson);
     // await setChoice("update")
     return [
       {
@@ -552,7 +552,7 @@ export async function getDtmf5Sec3(dtmf, person1) {
       },
     ];
   } else if (dtmf === "9") {
-    await setDtmfUser("dtmf4", person1);
+    await setDtmfUser("dtmf4", getPerson);
     return [
       {
         action: "play_get_input",
@@ -564,26 +564,26 @@ export async function getDtmf5Sec3(dtmf, person1) {
       },
     ];
   } else {
-    await setDtmfUser("dtmf51", person1);
-    return getDtmf5("1", person1);
+    await setDtmfUser("dtmf51", getPerson);
+    return getDtmf5("1", getPerson);
   }
 }
 
-export async function getDtmf6(dtmf, person1) {
-  console.log("DTMF OF getDtmf6", dtmf)
+export async function getDtmf6(dtmf, getPerson) {
+  console.log("DTMF OF getDtmf6", dtmf, getPerson)
   if (dtmf.length <= 12 && parseInt(dtmf) >= 12 && parseInt(dtmf) <= 999999999999) {
 
     // const db = client.db(dbName);
     // const collection = db.collection("aadharDetailsCalling");
-    // const updated = await collection.findOne({ personId: person1._id })
+    // const updated = await collection.findOne({ personId: getPerson._id })
     // console.log("Updated : ")
 
     try {
-      const updateData = await getAadhaarRefIDDetail(dtmf, person1);
+      const updateData = await getAadhaarRefIDDetail(dtmf, getPerson);
       console.log("UpadtedData :", updateData)
       if (updateData && updateData?.client_id) {
-        await setDtmfUser("dtmf6", person1);
-        await setUserChoice("Entered Aadhaar Number", person1);
+        await setDtmfUser("dtmf6", getPerson);
+        await setUserChoice("Entered Aadhaar Number", getPerson);
         return [
           {
             action: "play",
@@ -605,8 +605,8 @@ export async function getDtmf6(dtmf, person1) {
         ];
       } else {
         await deleteAadhaarDocument(dtmf);
-        await setDtmfUser("dtmf5", person1);
-        await setUserChoice("invalid aadhaar input", person1);
+        await setDtmfUser("dtmf5", getPerson);
+        await setUserChoice("invalid aadhaar input", getPerson);
         console.log("Aadhaar Document RefID not found.");
         return [
           {
@@ -640,12 +640,12 @@ export async function getDtmf6(dtmf, person1) {
   }
 }
 
-export async function getDtmfLast(dtmf, person1) {
+export async function getDtmfLast(dtmf, getPerson) {
   if (dtmf.length <= 6 && parseInt(dtmf) >= 6 && parseInt(dtmf) <= 999999) {
-    await setDtmfUser("dtmf7", person1);
-    await setUserChoice("Entered OTP/Verified/Not-Verified", person1);
+    await setDtmfUser("dtmf7", getPerson);
+    await setUserChoice("Entered OTP/Verified/Not-Verified", getPerson);
     try {
-      const aadhaarDocument = await getAdhaarDetailsOtpUpdate(dtmf,person1);
+      const aadhaarDocument = await getAdhaarDetailsOtpUpdate(dtmf,getPerson);
       if (aadhaarDocument) {
         console.log("Aadhaar Document:", aadhaarDocument);
         if (aadhaarDocument.response?.status == "success_aadhaar" || aadhaarDocument.response?.message == "Aadhaar Card Exists") {

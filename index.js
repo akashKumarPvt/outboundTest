@@ -14,6 +14,7 @@ import * as gujarati from "./languages/gujarati.lang.js";
 import * as kannada from "./languages/kannada.lang.js";
 import * as malayalam from "./languages/malayalam.lang.js";
 import EventEmitter from "events";
+import { ObjectId } from "mongodb";
 EventEmitter.defaultMaxListeners = 15;
 
 const app = express();
@@ -93,24 +94,24 @@ app.post("/numbersToCall", async (req, res) => {
     res.send(responses);
 });
 
-export async function setDtmfUser(dtmfStr, person1) {
-    if (!person1 || !person1._id) {
-        console.error("Invalid person object:", person1);
+export async function setDtmfUser(dtmfStr, getPerson) {
+    if (!getPerson || !getPerson._id) {
+        console.error("Invalid person object:", getPerson);
         throw new Error("Invalid person object or missing '_id'.");
     }
 
-    console.log("Processing person:", person1);
+    console.log("Processing person:", getPerson);
     try {
         const db = client.db(dbName);
         const collection = db.collection("ayushCallingData");
-        
+
         const result = await collection.updateOne(
-            { _id: person1._id },
+            { _id: getPerson._id },
             { $set: { setDtmf: dtmfStr } }
         );
-        
+
         if (result.matchedCount === 0) {
-            console.warn("No matching document found for _id:", person1._id);
+            console.warn("No matching document found for _id:", getPerson._id);
         } else {
             console.log("DTMF successfully updated:", dtmfStr);
         }
@@ -120,16 +121,15 @@ export async function setDtmfUser(dtmfStr, person1) {
     }
 }
 
-
-async function handleLanguageSelection(dtmf, extraParams, person1) {
-    if (!dtmf || !person1 || !person1._id) {
-        console.error("Invalid input: dtmf or person1 is missing or invalid.");
-        throw new Error("Invalid input: dtmf or person1._id is required.");
+async function handleLanguageSelection(dtmf, getPerson) {
+    if (!dtmf || !getPerson || !getPerson._id) {
+        console.error("Invalid input: dtmf or getPerson is missing or invalid.");
+        throw new Error("Invalid input: dtmf or getPerson._id is required.");
     }
 
-    let selectedLanguage = person1.language; // Default to the user's existing language
+    let selectedLanguage = getPerson.language; // Default to the user's existing language
 
-    if (person1.setDtmf === "dtmf1") {
+    if (getPerson.setDtmf === "dtmf1") {
         switch (dtmf.dtmf) {
             case "0":
                 selectedLanguage = "english";
@@ -164,12 +164,12 @@ async function handleLanguageSelection(dtmf, extraParams, person1) {
             const db = client.db(dbName);
             const collection = db.collection("ayushCallingData");
             const result = await collection.updateOne(
-                { _id: person1._id },
+                { _id: getPerson._id },
                 { $set: { language: selectedLanguage } }
             );
 
             if (result.matchedCount === 0) {
-                console.warn("No matching document found for _id:", person1._id);
+                console.warn("No matching document found for _id:", getPerson._id);
             } else {
                 console.log("Language successfully updated to:", selectedLanguage);
             }
@@ -184,9 +184,8 @@ async function handleLanguageSelection(dtmf, extraParams, person1) {
 
 app.post("/dtmf", async (req, res) => {
     const dtmf = req.body;
-    console.log("dtmf : ", dtmf);
-    const extraParams = JSON.parse(req.body.extra_params);
-    const selectedLanguage = await handleLanguageSelection(dtmf, extraParams, req.body.person);
+    console.log("Dtmf : ", dtmf.dtmf);
+    const selectedLanguage = await handleLanguageSelection(dtmf, req.body.person);
 
     if (req.body.person.setDtmf === "dtmf5") {
         const aadhaarInput = req.body.dtmf;
@@ -254,14 +253,14 @@ async function aadhaarOtpPart(data, route) {
 };
 
 export const aadhaar = {
-    processAadhaarInput: async function (aadhaarInput, person1) {
+    processAadhaarInput: async function (aadhaarInput, getPerson) {
         if (!aadhaarInput || typeof aadhaarInput !== "string" || !/^\d{12}$/.test(aadhaarInput)) {
             console.error("Invalid Aadhaar input. Must be a 12-digit numeric string.");
             throw new Error("Invalid Aadhaar input. Must be a 12-digit numeric string.");
         }
-        if (!person1 || !person1._id) {
-            console.error("Invalid person1 object. Missing _id.");
-            throw new Error("Invalid person1 object. Missing _id.");
+        if (!getPerson || !getPerson._id) {
+            console.error("Invalid getPerson object. Missing _id.");
+            throw new Error("Invalid getPerson object. Missing _id.");
         }
 
         try {
@@ -269,29 +268,17 @@ export const aadhaar = {
             const db = client.db(dbName);
             const collection = db.collection("aadharDetailsCalling");
 
-            console.log("Processing Aadhaar Input:", aadhaarNum);
-
-            const filter = { aadhaar_number: aadhaarNum };
-            const update = {
+            const dataToUpdate = {
                 $set: {
                     aadhaar_number: aadhaarNum,
-                    personId: person1._id,
+                    personId: getPerson._id,
                     createdAt: new Date(),
-                    otp_number: null, // Clear existing OTP number
                 },
             };
-            const options = { upsert: true, returnDocument: "after" };
 
-            const result = await collection.findOneAndUpdate(filter, update, options);
+            const result = await collection.insertOne(dataToUpdate);
+            console.log(result, "DataToUpdate Status")
 
-            if (!result.value) {
-                console.warn("Aadhaar number was not updated or created:", aadhaarNum);
-            } else {
-                console.log("Successfully processed Aadhaar Input. Result:", result.value);
-            }
-
-            // Uncomment this line if `getAadhaarRefIDDetail` is implemented
-            // await getAadhaarRefIDDetail(aadhaarNum);
 
         } catch (error) {
             console.error("Error storing Aadhaar number:", error.message);
@@ -301,17 +288,17 @@ export const aadhaar = {
 };
 
 
-export async function getAadhaarRefIDDetail(aadhaarNum, person1) {
+export async function getAadhaarRefIDDetail(aadhaarNum, getPerson) {
     if (!aadhaarNum || typeof aadhaarNum !== "string") {
         console.error("Invalid Aadhaar number input. It must be a non-empty string.");
         throw new Error("Invalid Aadhaar number input.");
     }
-    if (!person1 || !person1._id) {
-        console.error("Invalid person1 object. Missing _id.");
-        throw new Error("Invalid person1 object.");
+    if (!getPerson || !getPerson._id) {
+        console.error("Invalid getPerson object. Missing _id.");
+        throw new Error("Invalid getPerson object.");
     }
 
-    console.log("AADHAAR NUMBER IN GetAadhaarREF FUN:", aadhaarNum, typeof aadhaarNum);
+    console.log("AADHAAR NUMBER IN GetAadhaarREF FUNCTION:", aadhaarNum, typeof aadhaarNum);
 
     try {
         const db = client.db(dbName);
@@ -319,7 +306,7 @@ export async function getAadhaarRefIDDetail(aadhaarNum, person1) {
 
         const aadhaarDocument = await collection.findOne({ aadhaar_number: aadhaarNum });
 
-        if (!aadhaarDocument || !aadhaarDocument.personId.equals(person1._id)) {
+        if (!aadhaarDocument || !aadhaarDocument.personId.equals(getPerson._id)) {
             console.error("Aadhaar number not found or not associated with the person.");
             return null;
         }
@@ -360,13 +347,13 @@ export async function getAadhaarRefIDDetail(aadhaarNum, person1) {
 }
 
 
-export async function processOtpInput(otpInput, person1) {
+export async function processOtpInput(otpInput, getPerson) {
     try {
         const db = client.db(dbName);
         const collection = db.collection("aadharDetailsCalling");
         console.log("DTMF Input OTP:", otpInput);
         await collection.updateOne(
-            { personId: person1._id },
+            { personId: getPerson._id },
             { $set: { otp_number: otpInput } }
         );
         // const otpPassed = await getAdhaarDetailsOtpUpdate(otpInput);
@@ -377,14 +364,14 @@ export async function processOtpInput(otpInput, person1) {
     }
 };
 
-export async function getAdhaarDetailsOtpUpdate(otpInput, person1) {
+export async function getAdhaarDetailsOtpUpdate(otpInput, getPerson) {
     try {
         // Validate inputs
-        if (!otpInput || !person1 || !person1._id) {
+        if (!otpInput || !getPerson || !getPerson._id) {
             throw new Error("Invalid OTP input or missing person details");
         }
 
-        const personId = ObjectId(person1._id);
+        const personId = new ObjectId(getPerson._id);
         console.log("Processing Aadhaar OTP for personId:", personId);
 
         const db = client.db(dbName);
@@ -480,40 +467,40 @@ export async function deleteAadhaarDocument(aadhaarNum) {
     }
 };
 
-async function handleHindiDtmf(setDtmf, dtmf, res, person1) {
+async function handleHindiDtmf(setDtmf, dtmf, res, getPerson) {
     switch (setDtmf) {
         case "dtmf1":
-            res.send(await hindi.getDtmf(dtmf, person1));
+            res.send(await hindi.getDtmf(dtmf, getPerson));
             break;
         case "dtmf2":
-            res.send(await hindi.getDtmf2(dtmf, person1));
+            res.send(await hindi.getDtmf2(dtmf, getPerson));
             break;
         case "dtmf3":
-            res.send(await hindi.getDtmf3(dtmf, person1));
+            res.send(await hindi.getDtmf3(dtmf, getPerson));
             break;
         case "dtmf41":
-            res.send(await hindi.getDtmf4Sec1(dtmf, person1));
+            res.send(await hindi.getDtmf4Sec1(dtmf, getPerson));
             break;
         case "dtmf42":
-            res.send(await hindi.getDtmf4Sec2(dtmf, person1));
+            res.send(await hindi.getDtmf4Sec2(dtmf, getPerson));
             break;
         case "dtmf4":
-            res.send(await hindi.getDtmf5(dtmf, person1));
+            res.send(await hindi.getDtmf5(dtmf, getPerson));
             break;
         case "dtmf51":
-            res.send(await hindi.getDtmf5Sec1(dtmf, person1));
+            res.send(await hindi.getDtmf5Sec1(dtmf, getPerson));
             break;
         case "dtmf52":
-            res.send(await hindi.getDtmf5Sec2(dtmf, person1));
+            res.send(await hindi.getDtmf5Sec2(dtmf, getPerson));
             break;
         case "dtmf53":
-            res.send(await hindi.getDtmf5Sec3(dtmf, person1));
+            res.send(await hindi.getDtmf5Sec3(dtmf, getPerson));
             break;
         case "dtmf5":
-            res.send(await hindi.getDtmf6(dtmf, person1));
+            res.send(await hindi.getDtmf6(dtmf, getPerson));
             break;
         case "dtmf6":
-            res.send(await hindi.getDtmfLast(dtmf, person1));
+            res.send(await hindi.getDtmfLast(dtmf, getPerson));
             break;
         default:
             console.log("Invalid setDtmf value for Hindi.");
@@ -522,41 +509,41 @@ async function handleHindiDtmf(setDtmf, dtmf, res, person1) {
     // console.log("SetDTMF : ", setDtmf)
 };
 
-async function handleEnglishDtmf(setDtmf, dtmf, res, person1) {
+async function handleEnglishDtmf(setDtmf, dtmf, res, getPerson) {
 
     switch (setDtmf) {
         case "dtmf1":
-            res.send(await english.getEngDtmf(dtmf, person1));
+            res.send(await english.getEngDtmf(dtmf, getPerson));
             break;
         case "dtmf2":
-            res.send(await english.getEngDtmf2(dtmf, person1));
+            res.send(await english.getEngDtmf2(dtmf, getPerson));
             break;
         case "dtmf3":
-            res.send(await english.getEngDtmf3(dtmf, person1));
+            res.send(await english.getEngDtmf3(dtmf, getPerson));
             break;
         case "dtmf41":
-            res.send(await english.getEngDtmf4Sec1(dtmf, person1));
+            res.send(await english.getEngDtmf4Sec1(dtmf, getPerson));
             break;
         case "dtmf42":
-            res.send(await english.getEngDtmf4Sec2(dtmf, person1));
+            res.send(await english.getEngDtmf4Sec2(dtmf, getPerson));
             break;
         case "dtmf4":
-            res.send(await english.getEngDtmf5(dtmf, person1));
+            res.send(await english.getEngDtmf5(dtmf, getPerson));
             break;
         case "dtmf51":
-            res.send(await english.getEngDtmf5Sec1(dtmf, person1));
+            res.send(await english.getEngDtmf5Sec1(dtmf, getPerson));
             break;
         case "dtmf52":
-            res.send(await english.getEngDtmf5Sec2(dtmf, person1));
+            res.send(await english.getEngDtmf5Sec2(dtmf, getPerson));
             break;
         case "dtmf53":
-            res.send(await english.getEngDtmf5Sec3(dtmf, person1));
+            res.send(await english.getEngDtmf5Sec3(dtmf, getPerson));
             break;
         case "dtmf5":
-            res.send(await english.getEngDtmf6(dtmf, person1));
+            res.send(await english.getEngDtmf6(dtmf, getPerson));
             break;
         case "dtmf6":
-            res.send(await english.getEngDtmfLast(dtmf, person1));
+            res.send(await english.getEngDtmfLast(dtmf, getPerson));
             break;
         default:
             console.log("Invalid setDtmf value for Hindi.");
@@ -564,40 +551,40 @@ async function handleEnglishDtmf(setDtmf, dtmf, res, person1) {
     }
 };
 
-async function handleBanglaDtmf(setDtmf, dtmf, res, person1) {
+async function handleBanglaDtmf(setDtmf, dtmf, res, getPerson) {
     switch (setDtmf) {
         case "dtmf1":
-            res.send(await bangla.getBenDtmf(dtmf, person1));
+            res.send(await bangla.getBenDtmf(dtmf, getPerson));
             break;
         case "dtmf2":
-            res.send(await bangla.getBenDtmf2(dtmf, person1));
+            res.send(await bangla.getBenDtmf2(dtmf, getPerson));
             break;
         case "dtmf3":
-            res.send(await bangla.getBenDtmf3(dtmf, person1));
+            res.send(await bangla.getBenDtmf3(dtmf, getPerson));
             break;
         case "dtmf41":
-            res.send(await bangla.getBenDtmf4Sec1(dtmf, person1));
+            res.send(await bangla.getBenDtmf4Sec1(dtmf, getPerson));
             break;
         case "dtmf42":
-            res.send(await bangla.getBenDtmf4Sec2(dtmf, person1));
+            res.send(await bangla.getBenDtmf4Sec2(dtmf, getPerson));
             break;
         case "dtmf4":
-            res.send(await bangla.getBenDtmf5(dtmf, person1));
+            res.send(await bangla.getBenDtmf5(dtmf, getPerson));
             break;
         case "dtmf51":
-            res.send(await bangla.getBenDtmf5Sec1(dtmf, person1));
+            res.send(await bangla.getBenDtmf5Sec1(dtmf, getPerson));
             break;
         case "dtmf52":
-            res.send(await bangla.getBenDtmf5Sec2(dtmf, person1));
+            res.send(await bangla.getBenDtmf5Sec2(dtmf, getPerson));
             break;
         case "dtmf53":
-            res.send(await bangla.getBenDtmf5Sec3(dtmf, person1));
+            res.send(await bangla.getBenDtmf5Sec3(dtmf, getPerson));
             break;
         case "dtmf5":
-            res.send(await bangla.getBenDtmf6(dtmf, person1));
+            res.send(await bangla.getBenDtmf6(dtmf, getPerson));
             break;
         case "dtmf6":
-            res.send(await bangla.getBenDtmfLast(dtmf, person1));
+            res.send(await bangla.getBenDtmfLast(dtmf, getPerson));
             break;
         default:
             console.log("Invalid setDtmf value for Hindi.");
@@ -605,40 +592,40 @@ async function handleBanglaDtmf(setDtmf, dtmf, res, person1) {
     }
 };
 
-async function handleMarathiDtmf(setDtmf, dtmf, res, person1) {
+async function handleMarathiDtmf(setDtmf, dtmf, res, getPerson) {
     switch (setDtmf) {
         case "dtmf1":
-            res.send(await marathi.getMarDtmf(dtmf, person1));
+            res.send(await marathi.getMarDtmf(dtmf, getPerson));
             break;
         case "dtmf2":
-            res.send(await marathi.getMarDtmf2(dtmf, person1));
+            res.send(await marathi.getMarDtmf2(dtmf, getPerson));
             break;
         case "dtmf3":
-            res.send(await marathi.getMarDtmf3(dtmf, person1));
+            res.send(await marathi.getMarDtmf3(dtmf, getPerson));
             break;
         case "dtmf41":
-            res.send(await marathi.getMarDtmf4Sec1(dtmf, person1));
+            res.send(await marathi.getMarDtmf4Sec1(dtmf, getPerson));
             break;
         case "dtmf42":
-            res.send(await marathi.getMarDtmf4Sec2(dtmf, person1));
+            res.send(await marathi.getMarDtmf4Sec2(dtmf, getPerson));
             break;
         case "dtmf4":
-            res.send(await marathi.getMarDtmf5(dtmf, person1));
+            res.send(await marathi.getMarDtmf5(dtmf, getPerson));
             break;
         case "dtmf51":
-            res.send(await marathi.getMarDtmf5Sec1(dtmf, person1));
+            res.send(await marathi.getMarDtmf5Sec1(dtmf, getPerson));
             break;
         case "dtmf52":
-            res.send(await marathi.getMarDtmf5Sec2(dtmf, person1));
+            res.send(await marathi.getMarDtmf5Sec2(dtmf, getPerson));
             break;
         case "dtmf53":
-            res.send(await marathi.getMarDtmf5Sec3(dtmf, person1));
+            res.send(await marathi.getMarDtmf5Sec3(dtmf, getPerson));
             break;
         case "dtmf5":
-            res.send(await marathi.getMarDtmf6(dtmf, person1));
+            res.send(await marathi.getMarDtmf6(dtmf, getPerson));
             break;
         case "dtmf6":
-            res.send(await marathi.getMarDtmfLast(dtmf, person1));
+            res.send(await marathi.getMarDtmfLast(dtmf, getPerson));
             break;
         default:
             console.log("Invalid setDtmf value for Hindi.");
@@ -646,40 +633,40 @@ async function handleMarathiDtmf(setDtmf, dtmf, res, person1) {
     }
 };
 
-async function handleTeluguDtmf(setDtmf, dtmf, res, person1) {
+async function handleTeluguDtmf(setDtmf, dtmf, res, getPerson) {
     switch (setDtmf) {
         case "dtmf1":
-            res.send(await telugu.getTelDtmf(dtmf, person1));
+            res.send(await telugu.getTelDtmf(dtmf, getPerson));
             break;
         case "dtmf2":
-            res.send(await telugu.getTelDtmf2(dtmf, person1));
+            res.send(await telugu.getTelDtmf2(dtmf, getPerson));
             break;
         case "dtmf3":
-            res.send(await telugu.getTelDtmf3(dtmf, person1));
+            res.send(await telugu.getTelDtmf3(dtmf, getPerson));
             break;
         case "dtmf41":
-            res.send(await telugu.getTelDtmf4Sec1(dtmf, person1));
+            res.send(await telugu.getTelDtmf4Sec1(dtmf, getPerson));
             break;
         case "dtmf42":
-            res.send(await telugu.getTelDtmf4Sec2(dtmf, person1));
+            res.send(await telugu.getTelDtmf4Sec2(dtmf, getPerson));
             break;
         case "dtmf4":
-            res.send(await telugu.getTelDtmf5(dtmf, person1));
+            res.send(await telugu.getTelDtmf5(dtmf, getPerson));
             break;
         case "dtmf51":
-            res.send(await telugu.getTelDtmf5Sec1(dtmf, person1));
+            res.send(await telugu.getTelDtmf5Sec1(dtmf, getPerson));
             break;
         case "dtmf52":
-            res.send(await telugu.getTelDtmf5Sec2(dtmf, person1));
+            res.send(await telugu.getTelDtmf5Sec2(dtmf, getPerson));
             break;
         case "dtmf53":
-            res.send(await telugu.getTelDtmf5Sec3(dtmf, person1));
+            res.send(await telugu.getTelDtmf5Sec3(dtmf, getPerson));
             break;
         case "dtmf5":
-            res.send(await telugu.getTelDtmf6(dtmf, person1));
+            res.send(await telugu.getTelDtmf6(dtmf, getPerson));
             break;
         case "dtmf6":
-            res.send(await telugu.getTelDtmfLast(dtmf, person1));
+            res.send(await telugu.getTelDtmfLast(dtmf, getPerson));
             break;
         default:
             console.log("Invalid setDtmf value for Hindi.");
@@ -687,40 +674,40 @@ async function handleTeluguDtmf(setDtmf, dtmf, res, person1) {
     }
 };
 
-async function handleTamilDtmf(setDtmf, dtmf, res, person1) {
+async function handleTamilDtmf(setDtmf, dtmf, res, getPerson) {
     switch (setDtmf) {
         case "dtmf1":
-            res.send(await tamil.getTamDtmf(dtmf, person1));
+            res.send(await tamil.getTamDtmf(dtmf, getPerson));
             break;
         case "dtmf2":
-            res.send(await tamil.getTamDtmf2(dtmf, person1));
+            res.send(await tamil.getTamDtmf2(dtmf, getPerson));
             break;
         case "dtmf3":
-            res.send(await tamil.getTamDtmf3(dtmf, person1));
+            res.send(await tamil.getTamDtmf3(dtmf, getPerson));
             break;
         case "dtmf41":
-            res.send(await tamil.getTamDtmf4Sec1(dtmf, person1));
+            res.send(await tamil.getTamDtmf4Sec1(dtmf, getPerson));
             break;
         case "dtmf42":
-            res.send(await tamil.getTamDtmf4Sec2(dtmf, person1));
+            res.send(await tamil.getTamDtmf4Sec2(dtmf, getPerson));
             break;
         case "dtmf4":
-            res.send(await tamil.getTamDtmf5(dtmf, person1));
+            res.send(await tamil.getTamDtmf5(dtmf, getPerson));
             break;
         case "dtmf51":
-            res.send(await tamil.getTamDtmf5Sec1(dtmf, person1));
+            res.send(await tamil.getTamDtmf5Sec1(dtmf, getPerson));
             break;
         case "dtmf52":
-            res.send(await tamil.getTamDtmf5Sec2(dtmf, person1));
+            res.send(await tamil.getTamDtmf5Sec2(dtmf, getPerson));
             break;
         case "dtmf53":
-            res.send(await tamil.getTamDtmf5Sec3(dtmf, person1));
+            res.send(await tamil.getTamDtmf5Sec3(dtmf, getPerson));
             break;
         case "dtmf5":
-            res.send(await tamil.getTamDtmf6(dtmf, person1));
+            res.send(await tamil.getTamDtmf6(dtmf, getPerson));
             break;
         case "dtmf6":
-            res.send(await tamil.getTamDtmfLast(dtmf, person1));
+            res.send(await tamil.getTamDtmfLast(dtmf, getPerson));
             break;
         default:
             console.log("Invalid setDtmf value for Hindi.");
@@ -728,40 +715,40 @@ async function handleTamilDtmf(setDtmf, dtmf, res, person1) {
     }
 };
 
-async function handleGujaratiDtmf(setDtmf, dtmf, res, person1) {
+async function handleGujaratiDtmf(setDtmf, dtmf, res, getPerson) {
     switch (setDtmf) {
         case "dtmf1":
-            res.send(await gujarati.getGujDtmf(dtmf, person1));
+            res.send(await gujarati.getGujDtmf(dtmf, getPerson));
             break;
         case "dtmf2":
-            res.send(await gujarati.getGujDtmf2(dtmf, person1));
+            res.send(await gujarati.getGujDtmf2(dtmf, getPerson));
             break;
         case "dtmf3":
-            res.send(await gujarati.getGujDtmf3(dtmf, person1));
+            res.send(await gujarati.getGujDtmf3(dtmf, getPerson));
             break;
         case "dtmf41":
-            res.send(await gujarati.getGujDtmf4Sec1(dtmf, person1));
+            res.send(await gujarati.getGujDtmf4Sec1(dtmf, getPerson));
             break;
         case "dtmf42":
-            res.send(await gujarati.getGujDtmf4Sec2(dtmf, person1));
+            res.send(await gujarati.getGujDtmf4Sec2(dtmf, getPerson));
             break;
         case "dtmf4":
-            res.send(await gujarati.getGujDtmf5(dtmf, person1));
+            res.send(await gujarati.getGujDtmf5(dtmf, getPerson));
             break;
         case "dtmf51":
-            res.send(await gujarati.getGujDtmf5Sec1(dtmf, person1));
+            res.send(await gujarati.getGujDtmf5Sec1(dtmf, getPerson));
             break;
         case "dtmf52":
-            res.send(await gujarati.getGujDtmf5Sec2(dtmf, person1));
+            res.send(await gujarati.getGujDtmf5Sec2(dtmf, getPerson));
             break;
         case "dtmf53":
-            res.send(await gujarati.getGujDtmf5Sec3(dtmf, person1));
+            res.send(await gujarati.getGujDtmf5Sec3(dtmf, getPerson));
             break;
         case "dtmf5":
-            res.send(await gujarati.getGujDtmf6(dtmf, person1));
+            res.send(await gujarati.getGujDtmf6(dtmf, getPerson));
             break;
         case "dtmf6":
-            res.send(await gujarati.getGujDtmfLast(dtmf, person1));
+            res.send(await gujarati.getGujDtmfLast(dtmf, getPerson));
             break;
         default:
             console.log("Invalid setDtmf value for Hindi.");
@@ -769,40 +756,40 @@ async function handleGujaratiDtmf(setDtmf, dtmf, res, person1) {
     }
 };
 
-async function handleKannadaDtmf(setDtmf, dtmf, res, person1) {
+async function handleKannadaDtmf(setDtmf, dtmf, res, getPerson) {
     switch (setDtmf) {
         case "dtmf1":
-            res.send(await kannada.getKanDtmf(dtmf, person1));
+            res.send(await kannada.getKanDtmf(dtmf, getPerson));
             break;
         case "dtmf2":
-            res.send(await kannada.getKanDtmf2(dtmf, person1));
+            res.send(await kannada.getKanDtmf2(dtmf, getPerson));
             break;
         case "dtmf3":
-            res.send(await kannada.getKanDtmf3(dtmf, person1));
+            res.send(await kannada.getKanDtmf3(dtmf, getPerson));
             break;
         case "dtmf41":
-            res.send(await kannada.getKanDtmf4Sec1(dtmf, person1));
+            res.send(await kannada.getKanDtmf4Sec1(dtmf, getPerson));
             break;
         case "dtmf42":
-            res.send(await kannada.getKanDtmf4Sec2(dtmf, person1));
+            res.send(await kannada.getKanDtmf4Sec2(dtmf, getPerson));
             break;
         case "dtmf4":
-            res.send(await kannada.getKanDtmf5(dtmf, person1));
+            res.send(await kannada.getKanDtmf5(dtmf, getPerson));
             break;
         case "dtmf51":
-            res.send(await kannada.getKanDtmf5Sec1(dtmf, person1));
+            res.send(await kannada.getKanDtmf5Sec1(dtmf, getPerson));
             break;
         case "dtmf52":
-            res.send(await kannada.getKanDtmf5Sec2(dtmf, person1));
+            res.send(await kannada.getKanDtmf5Sec2(dtmf, getPerson));
             break;
         case "dtmf53":
-            res.send(await kannada.getKanDtmf5Sec3(dtmf, person1));
+            res.send(await kannada.getKanDtmf5Sec3(dtmf, getPerson));
             break;
         case "dtmf5":
-            res.send(await kannada.getKanDtmf6(dtmf, person1));
+            res.send(await kannada.getKanDtmf6(dtmf, getPerson));
             break;
         case "dtmf6":
-            res.send(await kannada.getKanDtmfLast(dtmf, person1));
+            res.send(await kannada.getKanDtmfLast(dtmf, getPerson));
             break;
         default:
             console.log("Invalid setDtmf value for Hindi.");
@@ -810,40 +797,40 @@ async function handleKannadaDtmf(setDtmf, dtmf, res, person1) {
     }
 };
 
-async function handleMalayalamDtmf(setDtmf, dtmf, res, person1) {
+async function handleMalayalamDtmf(setDtmf, dtmf, res, getPerson) {
     switch (setDtmf) {
         case "dtmf1":
-            res.send(await malayalam.getMalDtmf(dtmf, person1));
+            res.send(await malayalam.getMalDtmf(dtmf, getPerson));
             break;
         case "dtmf2":
-            res.send(await malayalam.getMalDtmf2(dtmf, person1));
+            res.send(await malayalam.getMalDtmf2(dtmf, getPerson));
             break;
         case "dtmf3":
-            res.send(await malayalam.getMalDtmf3(dtmf, person1));
+            res.send(await malayalam.getMalDtmf3(dtmf, getPerson));
             break;
         case "dtmf41":
-            res.send(await malayalam.getMalDtmf4Sec1(dtmf, person1));
+            res.send(await malayalam.getMalDtmf4Sec1(dtmf, getPerson));
             break;
         case "dtmf42":
-            res.send(await malayalam.getMalDtmf4Sec2(dtmf, person1));
+            res.send(await malayalam.getMalDtmf4Sec2(dtmf, getPerson));
             break;
         case "dtmf4":
-            res.send(await malayalam.getMalDtmf5(dtmf, person1));
+            res.send(await malayalam.getMalDtmf5(dtmf, getPerson));
             break;
         case "dtmf51":
-            res.send(await malayalam.getMalDtmf5Sec1(dtmf, person1));
+            res.send(await malayalam.getMalDtmf5Sec1(dtmf, getPerson));
             break;
         case "dtmf52":
-            res.send(await malayalam.getMalDtmf5Sec2(dtmf, person1));
+            res.send(await malayalam.getMalDtmf5Sec2(dtmf, getPerson));
             break;
         case "dtmf53":
-            res.send(await malayalam.getMalDtmf5Sec3(dtmf, person1));
+            res.send(await malayalam.getMalDtmf5Sec3(dtmf, getPerson));
             break;
         case "dtmf5":
-            res.send(await malayalam.getMalDtmf6(dtmf, person1));
+            res.send(await malayalam.getMalDtmf6(dtmf, getPerson));
             break;
         case "dtmf6":
-            res.send(await malayalam.getMalDtmfLast(dtmf, person1));
+            res.send(await malayalam.getMalDtmfLast(dtmf, getPerson));
             break;
         default:
             console.log("Invalid setDtmf value for Hindi.");

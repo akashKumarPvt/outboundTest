@@ -1,12 +1,12 @@
 import { client, dbName } from "../db/index.db.js";
-// import { person1 } from "../middlewares/getPerson.middleware.js";
+// import { getPerson } from "../middlewares/getPerson.middleware.js";
 import { ObjectId } from "mongodb";
 
 
 
-export async function setUserChoice(choosed, person1) {
-  var userChoices = person1?.userChoices || {};
-  console.log(person1.name, choosed, "person name , choice");
+export async function setUserChoice(choosed, getPerson) {
+  var userChoices = getPerson?.userChoices || {};
+  console.log(getPerson.name, choosed, "person name , choice");
   try {
     const db = client.db(dbName);
     const collection = db.collection("ayushCallingData");
@@ -28,7 +28,7 @@ export async function setUserChoice(choosed, person1) {
     ];
 
     // we are finding the index of the current dtmf 
-    let currentIndex = dtmfMappings.findIndex((mapping) => mapping.key === person1.setDtmf);
+    let currentIndex = dtmfMappings.findIndex((mapping) => mapping.key === getPerson.setDtmf);
     if (currentIndex === -1) {
       throw new Error("Invalid DTMF key");
     }
@@ -41,40 +41,40 @@ export async function setUserChoice(choosed, person1) {
     keysToRemove.forEach(key => delete userChoices[key]);
 
     // Reset userChoices if dtmf1 is selected
-    // if (person1.setDtmf === "dtmf1") {
+    // if (getPerson.setDtmf === "dtmf1") {
     //   userChoices = {};
     // }
 
     userChoices[dtmfMappings[currentIndex].value] = choosed;
 
-    // const existingDoc = await collection.findOne({ _id: person1._id });
+    // const existingDoc = await collection.findOne({ _id: getPerson._id });
 
     // if (!existingDoc) {
     //   await collection.insertOne({
-    //     _id: person1._id,
-    //     phone: person1.phone,
+    //     _id: getPerson._id,
+    //     phone: getPerson.phone,
     //     userChoices: {},
     //     createdAt: new Date(),
     //   });
     // }
 
     const updateValue = await collection.updateOne(
-      { _id: person1._id },
+      { _id: getPerson._id },
       { $set: { userChoices: userChoices } }
     );
 
     // if (
-    //   person1.setDtmf === "dtmf7" ||
-    //   (["answered", "hangup"].includes(person1.prevInfo?.status) &&
-    //     person1.prevInfo?.out &&
-    //     person1.prevInfo?.callEnd &&
-    //     person1.prevInfo.startCall !== 1713615594)
+    //   getPerson.setDtmf === "dtmf7" ||
+    //   (["answered", "hangup"].includes(getPerson.prevInfo?.status) &&
+    //     getPerson.prevInfo?.out &&
+    //     getPerson.prevInfo?.callEnd &&
+    //     getPerson.prevInfo.startCall !== 1713615594)
     // ) {
-    //   const filter = { personId: person1._id };
+    //   const filter = { personId: getPerson._id };
     //   const update = {
     //     $set: {
-    //       personId: person1._id,
-    //       phone: person1.phone,
+    //       personId: getPerson._id,
+    //       phone: getPerson.phone,
     //       userChoices: userChoices,
     //     },
     //   };
@@ -84,8 +84,8 @@ export async function setUserChoice(choosed, person1) {
     //   const uChId = new ObjectId();
     //   const inserted = await otherCollection.insertOne({
     //     _id: uChId,
-    //     personId: person1._id,
-    //     phone: person1.phone,
+    //     personId: getPerson._id,
+    //     phone: getPerson.phone,
     //     userChoices: {},
     //   });
     // }
