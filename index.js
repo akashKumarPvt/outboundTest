@@ -14,7 +14,6 @@ import * as gujarati from "./languages/gujarati.lang.js";
 import * as kannada from "./languages/kannada.lang.js";
 import * as malayalam from "./languages/malayalam.lang.js";
 import EventEmitter from "events";
-import {ObjectId} from "mongodb"
 EventEmitter.defaultMaxListeners = 15;
 
 const app = express();
@@ -27,7 +26,7 @@ app.use(getPerson);
 app.use(savePrevInfo);
 
 const port = process.env.PORT || 5000;
-export const actionUrl = "https://0937-106-219-162-241.ngrok-free.app/dtmf";
+export const actionUrl = "https://aae1-106-219-162-97.ngrok-free.app/dtmf";
 export const CLIENTKEY = "962c8a8a3ea6b34f31888a5256e2b93b:794703a1964c92e83aef52aaa0d6db77";
 export const SECRETKEY = "ltAOpD5f4bTP0zFWVO4cmUg8n57M4NhMl1Le104AROpUUj1P3x5oQGjt3sXdhpKMQ";
 
@@ -69,11 +68,6 @@ app.post("/numbersToCall", async (req, res) => {
             startingTimestamp: startingTimestamp
         };
         json.pcmo = [
-            // {
-            //   action: "play",
-            //   file_name:
-            //     "1713261621446IntroAllwav230d5c90-fbd8-11ee-9a4e-ddacf980bad8_piopiy.wav", //intro of murthy and PrivateCourt
-            // },
             {
                 action: "play_get_input",
                 file_name:
