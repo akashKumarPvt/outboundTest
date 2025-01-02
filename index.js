@@ -385,15 +385,12 @@ export async function processOtpInput(otpInput, person1) {
 
 export async function getAdhaarDetailsOtpUpdate(otpInput, person1) {
     try {
-        // Check if person1 object and _id are defined
-        if (!person1 || !person1._id) {
-            console.error("Invalid person1 object or missing _id:", person1);
-            throw new Error("Invalid person1 or missing _id.");
+        // Validate inputs
+        if (!otpInput || !person1 || !person1._id) {
+            throw new Error("Invalid OTP input or missing person details");
         }
 
-        // Ensure person1._id is a valid ObjectId
-        const personId = (person1._id); // Convert _id to ObjectId
-
+        const personId = ObjectId(person1._id);
         console.log("Processing Aadhaar OTP for personId:", personId);
 
         const db = client.db(dbName);
@@ -401,89 +398,77 @@ export async function getAdhaarDetailsOtpUpdate(otpInput, person1) {
         const userDetailsCollection = db.collection("aadharUserDetails");
         const callingDataCollection = db.collection("ayushCallingData");
 
-        // Find users based on personId
+        // Fetch Aadhaar records for the person
         const users = await aadhaarCollection.find({ personId }).toArray();
-        
-        // If no users found for the given personId, return null
+
         if (!users || users.length === 0) {
             console.error("No Aadhaar records found for personId:", personId);
             return null;
         }
 
-        let updatedAadhaarDocument = null;
+        // Process each Aadhaar record
+        const results = await Promise.all(
+            users.map(async (userItem) => {
+                const aadhaarNum = userItem.aadhaar_number;
 
-        // Loop through the users to process each Aadhaar record
-        for (const userItem of users) {
-            const aadhaarNum = userItem.aadhaar_number;
-            console.log("Processing Aadhaar number:", aadhaarNum);
+                if (!aadhaarNum) {
+                    console.warn("Skipping invalid Aadhaar record:", userItem);
+                    return null;
+                }
 
-            // If Aadhaar number is missing, skip the current iteration
-            if (!aadhaarNum) {
-                console.warn("Aadhaar number is undefined for userItem:", userItem);
-                continue;
-            }
+                console.log("Processing Aadhaar number:", aadhaarNum);
+                const aadhaarDocument = await aadhaarCollection.findOne({ aadhaar_number: aadhaarNum });
 
-            // Retrieve Aadhaar document from the collection
-            const aadhaarDocument = await aadhaarCollection.findOne({ aadhaar_number: aadhaarNum });
-            console.log("Aadhaar document:", aadhaarDocument);
+                if (!aadhaarDocument) {
+                    console.warn("Aadhaar document not found for:", aadhaarNum);
+                    return null;
+                }
 
-            // If Aadhaar document doesn't exist, skip the current iteration
-            if (!aadhaarDocument) {
-                console.warn("Aadhaar document not found for Aadhaar number:", aadhaarNum);
-                continue;
-            }
+                // Submit OTP for Aadhaar verification
+                const data = { otp: otpInput, client_id: aadhaarDocument.client_id };
+                const response = await aadhaarOtpPart(data, "submitOtp");
 
-            // Prepare data for OTP submission
-            const data = { otp: otpInput, client_id: aadhaarDocument.client_id };
-            const response = await aadhaarOtpPart(data, "submitOtp");
+                // Prepare updated Aadhaar details
+                const updatedAadhaarDocument = {
+                    ...aadhaarDocument,
+                    vDate: new Date(),
+                    response: response.result?.data,
+                };
 
-            // Prepare the updated Aadhaar document
-            updatedAadhaarDocument = {
-                ...aadhaarDocument,
-                vDate: Date.now(),
-                aadhaar_number: aadhaarNum,
-                response: response.result.data,
-            };
-            delete updatedAadhaarDocument._id;
+                delete updatedAadhaarDocument._id;
 
-            // Update the `aadharUserDetails` collection with the new Aadhaar details
-            await userDetailsCollection.findOneAndUpdate(
-                { _id: userItem.personId },
-                { $set: updatedAadhaarDocument },
-                { upsert: true }
-            );
+                // Update user details collection
+                await userDetailsCollection.updateOne(
+                    { _id: personId },
+                    { $set: updatedAadhaarDocument },
+                    { upsert: true }
+                );
 
-            // Determine Aadhaar status based on OTP response
-            const aadhaarStatus = (response.result.data?.status === "success_aadhaar") ? "Verified" : "Not-Verified";
-            console.log("Aadhaar Status:", aadhaarStatus);
+                const aadhaarStatus = response.result?.data?.status === "success_aadhaar" ? "Verified" : "Not-Verified";
+                console.log("Aadhaar Status:", aadhaarStatus);
 
-            // Update the `ayushCallingData` collection with the Aadhaar status
-            await callingDataCollection.updateOne(
-                { _id: userItem.personId },
-                {
-                    $set: {
-                        aadhaarNumber: aadhaarNum,
-                        aadhaarStatus,
+                // Update calling data collection
+                await callingDataCollection.updateOne(
+                    { _id: personId },
+                    {
+                        $set: {
+                            aadhaarNumber: aadhaarNum,
+                            aadhaarStatus,
+                        },
                     },
-                },
-                { upsert: true }
-            );
-        }
+                    { upsert: true }
+                );
 
-        // Return the updated Aadhaar document
-        return updatedAadhaarDocument;
+                return updatedAadhaarDocument;
+            })
+        );
 
+        // Filter out null results
+        const successfulUpdates = results.filter((result) => result !== null);
+
+        return successfulUpdates;
     } catch (error) {
-        // Handle any errors that occur during processing
         console.error("Error in getAdhaarDetailsOtpUpdate:", error);
-
-        // Handle specific MongoDB duplicate key error (if any)
-        if (error.code === 11000 && error.keyPattern && error.keyPattern._id) {
-            console.error("Duplicate key error:", error);
-            return null;
-        }
-
-        // Throw the error to be handled by the caller
         throw error;
     }
 }
