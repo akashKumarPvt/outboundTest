@@ -13,9 +13,9 @@ export async function getDtmf(dtmf, getPerson) {
     await setUserChoice("hindi", getPerson);
     // const loanAmtSpoken = toSpokenNumber(getPerson?.loanAmt || 0);
     // const pendingAmtSpoken = toSpokenNumber(getPerson?.pendingAmt || 0);
-    const loanAmtStr=numberToWords.toWords(+getPerson.loanAmt).split(" ").join(".....");
-    const pendingAmtStr=numberToWords.toWords(+getPerson.pendingAmt).split(" ").join(".....");
-    const organizationStr=getPerson.organization.split(" ").join(".....");
+    const loanAmtStr = numberToWords.toWords(+getPerson.loanAmt).split(" ").join(".....");
+    const pendingAmtStr = numberToWords.toWords(+getPerson.pendingAmt).split(" ").join(".....");
+    const organizationStr = getPerson.organization.split(" ").join(".....");
     console.log(loanAmtStr, "loanAmtArr hindi.lang");
     console.log(pendingAmtStr, "pendingAmtArr hindi.lang");
     return [
@@ -572,16 +572,10 @@ export async function getDtmf5Sec3(dtmf, getPerson) {
 export async function getDtmf6(dtmf, getPerson) {
   console.log("DTMF OF getDtmf6", dtmf, getPerson)
   if (dtmf.length <= 12 && parseInt(dtmf) >= 12 && parseInt(dtmf) <= 999999999999) {
-
-    // const db = client.db(dbName);
-    // const collection = db.collection("aadharDetailsCalling");
-    // const updated = await collection.findOne({ personId: getPerson._id })
-    // console.log("Updated : ")
-
     try {
-      const updateData = await getAadhaarRefIDDetail(dtmf, getPerson);
-      console.log("UpadtedData :", updateData)
-      if (updateData && updateData?.client_id) {
+      const updatedData = await getAadhaarRefIDDetail(dtmf, getPerson);
+      console.log(updatedData, "updatedData After Entering Aadhaar Number")
+      if (updatedData && updatedData?.client_id) {
         await setDtmfUser("dtmf6", getPerson);
         await setUserChoice("Entered Aadhaar Number", getPerson);
         return [
@@ -598,8 +592,8 @@ export async function getDtmf6(dtmf, getPerson) {
           {
             action: "input",
             max_digit: 6,
-            max_retry: 2,
-            timeout: 600,
+            max_retry: 1,
+            timeout: 120,
             action_url: actionUrl,
           },
         ];
@@ -607,7 +601,7 @@ export async function getDtmf6(dtmf, getPerson) {
         await deleteAadhaarDocument(dtmf);
         await setDtmfUser("dtmf5", getPerson);
         await setUserChoice("invalid aadhaar input", getPerson);
-        console.log("Aadhaar Document RefID not found.");
+        console.log("Aadhaar Document Client Key not found.");
         return [
           {
             action: "play",
@@ -645,7 +639,7 @@ export async function getDtmfLast(dtmf, getPerson) {
     await setDtmfUser("dtmf7", getPerson);
     await setUserChoice("Entered OTP/Verified/Not-Verified", getPerson);
     try {
-      const aadhaarDocument = await getAdhaarDetailsOtpUpdate(dtmf,getPerson);
+      const aadhaarDocument = await getAdhaarDetailsOtpUpdate(dtmf, getPerson);
       if (aadhaarDocument) {
         console.log("Aadhaar Document:", aadhaarDocument);
         if (aadhaarDocument.response?.status == "success_aadhaar" || aadhaarDocument.response?.message == "Aadhaar Card Exists") {

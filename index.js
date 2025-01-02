@@ -192,10 +192,9 @@ app.post("/dtmf", async (req, res) => {
         aadhaar.processAadhaarInput(aadhaarInput, req.body.person);
     }
     if (req.body.person.setDtmf === "dtmf6") {
-        const otpInput = req.body.dtmf;
+        const otpInput = req?.body?.dtmf;
         processOtpInput(otpInput, req.body.person);
     }
-
     switch (selectedLanguage) {
         case "english":
             handleEnglishDtmf(req.body.person.setDtmf, dtmf.dtmf, res, req.body.person);
@@ -252,9 +251,11 @@ async function aadhaarOtpPart(data, route) {
     }
 };
 
+
+//this function will take the input that is aadhaar number
 export const aadhaar = {
     processAadhaarInput: async function (aadhaarInput, getPerson) {
-        if (!aadhaarInput || typeof aadhaarInput !== "string" || !/^\d{12}$/.test(aadhaarInput)) {
+        if (!aadhaarInput || typeof aadhaarInput !== "string" ) {
             console.error("Invalid Aadhaar input. Must be a 12-digit numeric string.");
             throw new Error("Invalid Aadhaar input. Must be a 12-digit numeric string.");
         }
@@ -269,11 +270,9 @@ export const aadhaar = {
             const collection = db.collection("aadharDetailsCalling");
 
             const dataToUpdate = {
-                $set: {
-                    aadhaar_number: aadhaarNum,
-                    personId: getPerson._id,
-                    createdAt: new Date(),
-                },
+                aadhaar_number: aadhaarNum,
+                personId: getPerson._id,
+                createdAt: new Date(),
             };
 
             const result = await collection.insertOne(dataToUpdate);
@@ -287,7 +286,6 @@ export const aadhaar = {
     },
 };
 
-
 export async function getAadhaarRefIDDetail(aadhaarNum, getPerson) {
     if (!aadhaarNum || typeof aadhaarNum !== "string") {
         console.error("Invalid Aadhaar number input. It must be a non-empty string.");
@@ -298,13 +296,18 @@ export async function getAadhaarRefIDDetail(aadhaarNum, getPerson) {
         throw new Error("Invalid getPerson object.");
     }
 
-    console.log("AADHAAR NUMBER IN GetAadhaarREF FUNCTION:", aadhaarNum, typeof aadhaarNum);
+    console.log("AADHAAR NUMBER IN getAadhaarRefIDDetail FUNCTION:", aadhaarNum, "Type : ", typeof aadhaarNum);
 
     try {
         const db = client.db(dbName);
         const collection = db.collection("aadharDetailsCalling");
 
-        const aadhaarDocument = await collection.findOne({ aadhaar_number: aadhaarNum });
+        const aadhaarDocument = await collection.findOne(
+            { aadhaar_number: aadhaarNum },
+            { sort: { _id: -1 } }
+        );
+
+        console.log(aadhaarDocument, "aadhaarDocument");
 
         if (!aadhaarDocument || !aadhaarDocument.personId.equals(getPerson._id)) {
             console.error("Aadhaar number not found or not associated with the person.");
@@ -312,9 +315,9 @@ export async function getAadhaarRefIDDetail(aadhaarNum, getPerson) {
         }
 
         // Generate OTP
-        const data = { aadhaarNumber: aadhaarNum };
+        const aadhaarNumberInDoc = aadhaarDocument?.aadhaar_number
+        const data = { aadhaarNumber: aadhaarNumberInDoc };
         const response = await aadhaarOtpPart(data, "requestOtp");
-        console.log("OTP Generation Response:", response);
 
         if (
             response &&
@@ -322,20 +325,21 @@ export async function getAadhaarRefIDDetail(aadhaarNum, getPerson) {
             response.result.data &&
             response.result.data.client_id
         ) {
+
             const updateData = {
                 client_id: response.result.data.client_id,
                 vDate: new Date(),
             };
 
-            // Update or create Aadhaar document
             await collection.updateOne(
-                { aadhaar_number: aadhaarNum },
+                { aadhaar_number: aadhaarNumberInDoc },
                 { $set: updateData },
                 { upsert: true }
             );
 
-            console.log("Updated Aadhaar data with client_id:", updateData);
+            console.log("OTP HAS BEEN SENT!!")
             return updateData;
+
         } else {
             console.error("Error generating OTP for Aadhaar number:", response);
             return null;
@@ -346,18 +350,17 @@ export async function getAadhaarRefIDDetail(aadhaarNum, getPerson) {
     }
 }
 
-
 export async function processOtpInput(otpInput, getPerson) {
     try {
         const db = client.db(dbName);
         const collection = db.collection("aadharDetailsCalling");
         console.log("DTMF Input OTP:", otpInput);
-        await collection.updateOne(
+        const otpData = await collection.updateOne(
             { personId: getPerson._id },
             { $set: { otp_number: otpInput } }
         );
-        // const otpPassed = await getAdhaarDetailsOtpUpdate(otpInput);
-        // console.log("OTP passed to the getAdhaarDetailsOtpUpdate : ", otpPassed);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return otpData;
     } catch (error) {
         console.error("Error storing OTP number:", error);
         throw error;
@@ -365,6 +368,7 @@ export async function processOtpInput(otpInput, getPerson) {
 };
 
 export async function getAdhaarDetailsOtpUpdate(otpInput, getPerson) {
+    console.log(otpInput, getPerson, "DATA AT OTP INPUT")
     try {
         // Validate inputs
         if (!otpInput || !getPerson || !getPerson._id) {
@@ -372,7 +376,7 @@ export async function getAdhaarDetailsOtpUpdate(otpInput, getPerson) {
         }
 
         const personId = new ObjectId(getPerson._id);
-        console.log("Processing Aadhaar OTP for personId:", personId);
+        console.log("Processing Aadhaar OTP for personId:", getPerson?.name);
 
         const db = client.db(dbName);
         const aadhaarCollection = db.collection("aadharDetailsCalling");
@@ -380,74 +384,59 @@ export async function getAdhaarDetailsOtpUpdate(otpInput, getPerson) {
         const callingDataCollection = db.collection("ayushCallingData");
 
         // Fetch Aadhaar records for the person
-        const users = await aadhaarCollection.find({ personId }).toArray();
+        const aadhaarDocument = await aadhaarCollection.findOne({ personId });
 
-        if (!users || users.length === 0) {
-            console.error("No Aadhaar records found for personId:", personId);
+        if (!aadhaarDocument) {
+            console.error("No Aadhaar record found for personId:", personId);
             return null;
         }
 
-        // Process each Aadhaar record
-        const results = await Promise.all(
-            users.map(async (userItem) => {
-                const aadhaarNum = userItem.aadhaar_number;
+        const aadhaarNum = aadhaarDocument.aadhaar_number;
 
-                if (!aadhaarNum) {
-                    console.warn("Skipping invalid Aadhaar record:", userItem);
-                    return null;
-                }
+        if (!aadhaarNum) {
+            console.warn("Invalid Aadhaar number for person:", getPerson?.name);
+            return null;
+        }
 
-                console.log("Processing Aadhaar number:", aadhaarNum);
-                const aadhaarDocument = await aadhaarCollection.findOne({ aadhaar_number: aadhaarNum });
+        console.log("Processing Aadhaar number:", aadhaarNum);
 
-                if (!aadhaarDocument) {
-                    console.warn("Aadhaar document not found for:", aadhaarNum);
-                    return null;
-                }
+        // Submit OTP for Aadhaar verification
+        const data = { otp: otpInput, client_id: aadhaarDocument.client_id };
+        const response = await aadhaarOtpPart(data, "submitOtp");
 
-                // Submit OTP for Aadhaar verification
-                const data = { otp: otpInput, client_id: aadhaarDocument.client_id };
-                const response = await aadhaarOtpPart(data, "submitOtp");
+        // Prepare updated Aadhaar details
+        const updatedAadhaarDocument = {
+            ...aadhaarDocument,
+            vDate: new Date(),
+            response: response.result?.data,
+        };
 
-                // Prepare updated Aadhaar details
-                const updatedAadhaarDocument = {
-                    ...aadhaarDocument,
-                    vDate: new Date(),
-                    response: response.result?.data,
-                };
+        delete updatedAadhaarDocument._id;
 
-                delete updatedAadhaarDocument._id;
-
-                // Update user details collection
-                await userDetailsCollection.updateOne(
-                    { _id: personId },
-                    { $set: updatedAadhaarDocument },
-                    { upsert: true }
-                );
-
-                const aadhaarStatus = response.result?.data?.status === "success_aadhaar" ? "Verified" : "Not-Verified";
-                console.log("Aadhaar Status:", aadhaarStatus);
-
-                // Update calling data collection
-                await callingDataCollection.updateOne(
-                    { _id: personId },
-                    {
-                        $set: {
-                            aadhaarNumber: aadhaarNum,
-                            aadhaarStatus,
-                        },
-                    },
-                    { upsert: true }
-                );
-
-                return updatedAadhaarDocument;
-            })
+        // Update user details collection
+        await userDetailsCollection.updateOne(
+            { _id: personId },
+            { $set: updatedAadhaarDocument },
+            { upsert: true }
         );
 
-        // Filter out null results
-        const successfulUpdates = results.filter((result) => result !== null);
+        const aadhaarStatus = response.result?.data?.status === "success_aadhaar" ? "Verified" : "Not-Verified";
+        console.log("Aadhaar Status:", aadhaarStatus);
 
-        return successfulUpdates;
+        // Update calling data collection
+        await callingDataCollection.updateOne(
+            { _id: personId },
+            {
+                $set: {
+                    aadhaarNumber: aadhaarNum,
+                    aadhaarStatus,
+                },
+            },
+            { upsert: true }
+        );
+
+        return updatedAadhaarDocument;
+
     } catch (error) {
         console.error("Error in getAdhaarDetailsOtpUpdate:", error);
         throw error;
