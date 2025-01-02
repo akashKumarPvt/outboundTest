@@ -41,38 +41,38 @@ export async function getEngDtmf(dtmf, person1) {
     const pendingAmtStr=numberToWords.toWords(+person1.pendingAmt).split(" ").join(".....");
     const organizationStr=person1.organization.split(" ").join(".....");
     return [
-      {
-        action: "play",
-        file_name: "1713581961476aadharenglishwavfc97bcd0-fec1-11ee-9a4e-ddacf980bad8_piopiy.wav", //valid
-      },
-      {
-        action: "play",
-        file_name: "1713581961476aadharenglishwavfc97bcd0-fec1-11ee-9a4e-ddacf980bad8_piopiy.wav", //adhaarcard
-      },
-      {
-        action: "play",
-        file_name: "1712901384000accordinfengwav64cda850-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
-      },
-      {
-        action: "speak",
-        text: `${organizationStr}`
-      },
-      {
-        action: "play",
-        file_name: "1712901395350initialAmountengwav6b909d50-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
-      },
-      {
-        action: "speak",
-        text: `Rupees...... ${loanAmtStr}... only`
-      },
-      {
-        action: "play",
-        file_name: "1712901420980pendingAmountengwav7ad83480-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
-      },
-      {
-        action: "speak",
-        text: `Rupees...... ${pendingAmtStr}... only`
-      },
+      // {
+      //   action: "play",
+      //   file_name: "1713581961476aadharenglishwavfc97bcd0-fec1-11ee-9a4e-ddacf980bad8_piopiy.wav", //valid
+      // },
+      // {
+      //   action: "play",
+      //   file_name: "1713581961476aadharenglishwavfc97bcd0-fec1-11ee-9a4e-ddacf980bad8_piopiy.wav", //adhaarcard
+      // },
+      // {
+      //   action: "play",
+      //   file_name: "1712901384000accordinfengwav64cda850-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
+      // },
+      // {
+      //   action: "speak",
+      //   text: `${organizationStr}`
+      // },
+      // {
+      //   action: "play",
+      //   file_name: "1712901395350initialAmountengwav6b909d50-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
+      // },
+      // {
+      //   action: "speak",
+      //   text: `Rupees...... ${loanAmtStr}... only`
+      // },
+      // {
+      //   action: "play",
+      //   file_name: "1712901420980pendingAmountengwav7ad83480-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
+      // },
+      // {
+      //   action: "speak",
+      //   text: `Rupees...... ${pendingAmtStr}... only`
+      // },
       {
         action: "play_get_input",
         file_name:
