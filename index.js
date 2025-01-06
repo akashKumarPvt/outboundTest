@@ -97,10 +97,12 @@ app.post("/numbersToCall", async (req, res) => {
 app.post("/answerecdr", async (req, res) => {
     var cdr = req.body;
     console.log(cdr, "answer cdr");
-    let phone = req.body.from.trim();
+    let startingTimestamp = new Date().getTime().toString();
+    const extra_params = { type: "outbound", startingTimestamp: startingTimestamp };
+    let phone = req.body.from;
     const db = client.db(dbName);
     const collection = db.collection("ayushCallingData");
-    const result2 = await client2.connect();
+    const result2 = await client.connect();
     const db2 = result2.db(dbName);
     const collection2 = db2.collection("ayushCallingData");
     let person1 = await collection.findOne({
@@ -127,7 +129,7 @@ app.post("/answerecdr", async (req, res) => {
       res.send([
         {
           action: "param",
-          text: `{ "type": "usersData" }`,
+          text: extra_params,
   
         },
         {
@@ -149,7 +151,7 @@ app.post("/answerecdr", async (req, res) => {
       res.send([
         {
           action: "param",
-          text: "{type=CallingData2}",
+          text: extra_params,
         },
         {
           action: "record",
@@ -190,7 +192,7 @@ app.post("/answerecdr", async (req, res) => {
       res.send([
         {
           action: "param",
-          text: `{ "type": "salesData" }`,
+          text: extra_params,
         },
         {
           action: "play_get_input",

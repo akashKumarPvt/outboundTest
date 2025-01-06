@@ -3,12 +3,46 @@ import { client, dbName } from "../db/index.db.js"
 async function getPerson(req, res, next) {
     let person = {};
     console.log("Middleware ", req.body);
-    if (req.body.from == 918031406694 || req.body.from == 918031406693) {
-        let phone = req.body.to;
-        let type = JSON.parse(req.body.extra_params);
-        if (type.type == "outbound") {
+    if (req.body.action !== "inbound") {
+        if (req.body.from == 918031406694 || req.body.from == 918031406693) {
+            let phone = req.body.to;
+            let type = JSON.parse(req.body.extra_params);
+            if (type.type == "outbound") {
+                try {
+                    const startingTimestamp = type.startingTimestamp;
+                    const db = client.db(dbName);
+                    const collection = db.collection("ayushCallingData");
+                    person = await collection.findOne({
+                        $or: [{ phone: +phone }, { phone: phone + "" }],
+                    });
+                    await collection.updateOne(
+                        {
+                            $or: [{ phone: +phone }, { phone: phone + "" }],
+                        },
+                        {
+                            $set: {
+                                setDtmf: "dtmf1",
+                                startingTimestamp: startingTimestamp
+                            }
+                        }
+                    );
+
+                    if (!person) {
+                        console.error("Person not found");
+                        return res.status(404).send("Person not found");
+                    }
+                    else {
+                        req.body.person = person;
+                    }
+                } catch (error) {
+                    console.error("Error fetching person data:", error);
+                    return res.status(500).send("Internal Server Error");
+                }
+            }
+        } else if (req.body.to == 918031406694 || req.body.to == 918031406693) {
+            let phone = req.body.from;
             try {
-                const startingTimestamp = type.startingTimestamp;
+                const startingTimestamp = type?.startingTimestamp||"";
                 const db = client.db(dbName);
                 const collection = db.collection("ayushCallingData");
                 person = await collection.findOne({
@@ -18,14 +52,8 @@ async function getPerson(req, res, next) {
                     {
                         $or: [{ phone: +phone }, { phone: phone + "" }],
                     },
-                    {
-                        $set: {
-                            setDtmf:"dtmf1",
-                            startingTimestamp: startingTimestamp
-                        }
-                    }
+                    { $set: { setDtmf: "dtmf1", startingTimestamp: startingTimestamp } }
                 );
-               
                 if (!person) {
                     console.error("Person not found");
                     return res.status(404).send("Person not found");
@@ -37,32 +65,6 @@ async function getPerson(req, res, next) {
                 console.error("Error fetching person data:", error);
                 return res.status(500).send("Internal Server Error");
             }
-        }
-    } else if (req.body.to == 918031406694 || req.body.to == 918031406693) {
-        let phone = req.body.from;
-        try {
-            const startingTimestamp = type.startingTimestamp;
-            const db = client.db(dbName);
-            const collection = db.collection("ayushCallingData");
-            person = await collection.findOne({
-                $or: [{ phone: +phone }, { phone: phone + "" }],
-            });
-            await collection.updateOne(
-                {
-                    $or: [{ phone: +phone }, { phone: phone + "" }],
-                },
-                { $set: { setDtmf:"dtmf1",startingTimestamp: startingTimestamp } }
-            );
-            if (!person) {
-                console.error("Person not found");
-                return res.status(404).send("Person not found");
-            }
-            else {
-                req.body.person = person;
-            }
-        } catch (error) {
-            console.error("Error fetching person data:", error);
-            return res.status(500).send("Internal Server Error");
         }
     }
     next();
