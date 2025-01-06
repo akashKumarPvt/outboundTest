@@ -27,7 +27,7 @@ app.use(getPerson);
 app.use(savePrevInfo);
 
 const port = process.env.PORT || 5000;
-export const actionUrl = "https://aae1-106-219-162-97.ngrok-free.app/dtmf";
+export const actionUrl = "https://0937-106-219-162-241.ngrok-free.app/dtmf";
 export const CLIENTKEY = "962c8a8a3ea6b34f31888a5256e2b93b:794703a1964c92e83aef52aaa0d6db77";
 export const SECRETKEY = "ltAOpD5f4bTP0zFWVO4cmUg8n57M4NhMl1Le104AROpUUj1P3x5oQGjt3sXdhpKMQ";
 
@@ -93,6 +93,117 @@ app.post("/numbersToCall", async (req, res) => {
 
     res.send(responses);
 });
+
+app.post("/answerecdr", async (req, res) => {
+    var cdr = req.body;
+    console.log(cdr, "answer cdr");
+    let phone = req.body.from.trim();
+    const db = client.db(dbName);
+    const collection = db.collection("usersData");
+    const result2 = await client2.connect();
+    const db2 = result2.db(dbName);
+    const collection2 = db2.collection("CallingData2");
+    let person1 = await collection.findOne({
+      $or: [{ phone: +phone }, { phone: phone + "" }],
+    });
+    let person2 = {};
+    if (cdr.to == " 918035731375") {
+      let persons = await collection2
+        .find({
+          $or: [
+            { phone: +phone },
+            { phone: phone + "" }
+          ],
+        })
+        .sort({ callTime: -1 })
+        .limit(1)
+        .toArray();
+      if (persons) {
+        person2 = persons[0];
+      }
+    }
+  
+    if (req.body.to == 918035731373) {
+      res.send([
+        {
+          action: "param",
+          text: `{ "type": "usersData" }`,
+  
+        },
+        {
+          action: "play",
+          file_name:
+            "1689677048969nbfcandbankintrofordefaulterswav0667cdc0-2558-11ee-a155-59e5d3b0d16d_piopiy.wav",
+        },
+  
+        {
+          action: "play_get_input",
+          file_name:
+            "1689677035869nameofbankandnbfcwavfe9b30f0-2557-11ee-a155-59e5d3b0d16d_piopiy.wav",
+          max_digit: 1,
+          max_retry: 2,
+          action_url: actionUrl,
+        },
+      ]);
+    } else if (req.body.to == 918035731375) {
+      res.send([
+        {
+          action: "param",
+          text: "{type=CallingData2}",
+        },
+        {
+          action: "record",
+          //"_id":person2._id   file_name:"1689677048969nbfcandbankintrofordefaulterswav0667cdc0-2558-11ee-a155-59e5d3b0d16d_piopiy.wav",
+        },
+        {
+          action: "bridge",
+          duration: 300,
+          timeout: 20,
+          from: 918035731375,
+          loop: 2,
+          connect: [
+            {
+              type: "pstn",
+              number: +person2.uPhone,
+            },
+          ],
+        },
+      ]);
+    }
+    else if (req.body.to == 918035731376) {
+      [
+        // {
+        //   action: "play",
+        //   file_name:
+        //     "1713261621446IntroAllwav230d5c90-fbd8-11ee-9a4e-ddacf980bad8_piopiy.wav", //intro of murthy and PrivateCourt
+        // },
+        {
+          action: "play_get_input",
+          file_name:
+            "1712297470293LanguageOptionsPlaywav4c2f98e0-f313-11ee-8950-d73e6adcd329_piopiy.wav", //language selection
+          max_digit: 1,
+          max_retry: 2,
+          action_url: actionUrl,
+        },
+      ];
+    } else {
+      res.send([
+        {
+          action: "param",
+          text: `{ "type": "salesData" }`,
+        },
+        {
+          action: "play_get_input",
+          file_name:
+            "1690876772203Salescallwav592d90f0-3041-11ee-9d37-33aa719412c2_piopiy.wav",
+          max_digit: 1,
+          max_retry: 2,
+          action_url: "https://serverfile1.onrender.com/dtmf",
+        },
+      ]);
+    }
+  });
+
 
 export async function setDtmfUser(dtmfStr, getPerson) {
     if (!getPerson || !getPerson._id) {
@@ -275,8 +386,17 @@ export const aadhaar = {
                 createdAt: new Date(),
             };
 
+            //update aadhaar number in the ayushDetailCalling
+
+            const existingRecord = await collection.findOne({ aadhaar_number: aadhaarInput });
+            if (existingRecord) {
+                console.error("Aadhaar number already exists in the database.");
+                throw new Error("Aadhaar number already exists.");
+            }
+
+            // Insert the new Aadhaar data
             const result = await collection.insertOne(dataToUpdate);
-            console.log(result, "DataToUpdate Status")
+            console.log("Data inserted successfully:", result);
 
 
         } catch (error) {

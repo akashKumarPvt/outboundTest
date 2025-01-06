@@ -16,39 +16,39 @@ export async function getBenDtmf(dtmf, getPerson) {
     const pendingAmtStr=numberToWords.toWords(+getPerson.pendingAmt).split(" ").join(".....");
     const organizationStr=getPerson.organization.split(" ").join(".....");
     return [
-      {
-        action: "play",
-        file_url: "1717662967706validbenagliwavd1dcea90-23df-11ef-b052-99cad6a21f8f_piopiy.wav", //valid
-      },
-      {
-        action: "play",
-        file_name: "1713581973207aadharbengaliwav039522c0-fec2-11ee-9a4e-ddacf980bad8_piopiy.wav", //adhaarcard
-      },
+      // {
+      //   action: "play",
+      //   file_url: "1717662967706validbenagliwavd1dcea90-23df-11ef-b052-99cad6a21f8f_piopiy.wav", //valid
+      // },
+      // {
+      //   action: "play",
+      //   file_name: "1713581973207aadharbengaliwav039522c0-fec2-11ee-9a4e-ddacf980bad8_piopiy.wav", //adhaarcard
+      // },
     
-      {
-        action: "speak",
-        text: `${organizationStr}`
-      },
-      {
-        action: "play",
-        file_name: "1712901432437accorrdingTobengaliwav81abcb50-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
-      },
-      {
-        action: "play",
-        file_name: "1712901452997initialAmountbengaliwav8ded0050-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
-      },
-      {
-        action: "speak",
-        text: `Rupees...... ${loanAmtStr}...`
-      },
-      {
-        action: "play",
-        file_name: "1712901466367pendingAmountbengaliwav95e5dd40-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
-      },
-      {
-        action: "speak",
-        text: `Rupees...... ${pendingAmtStr}...`
-      },
+      // {
+      //   action: "speak",
+      //   text: `${organizationStr}`
+      // },
+      // {
+      //   action: "play",
+      //   file_name: "1712901432437accorrdingTobengaliwav81abcb50-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
+      // },
+      // {
+      //   action: "play",
+      //   file_name: "1712901452997initialAmountbengaliwav8ded0050-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
+      // },
+      // {
+      //   action: "speak",
+      //   text: `Rupees...... ${loanAmtStr}...`
+      // },
+      // {
+      //   action: "play",
+      //   file_name: "1712901466367pendingAmountbengaliwav95e5dd40-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
+      // },
+      // {
+      //   action: "speak",
+      //   text: `Rupees...... ${pendingAmtStr}...`
+      // },
       {
         action: "play_get_input",
         file_name:
@@ -583,8 +583,8 @@ export async function getBenDtmf6(dtmf, getPerson) {
           {
             action: "input",
             max_digit: 6,
-            max_retry: 2,
-            timeout: 60,
+            max_retry: 1,
+            timeout: 120,
             action_url: actionUrl,
           },
         ];
@@ -628,9 +628,9 @@ export async function getBenDtmfLast(dtmf, getPerson) {
     await setDtmfUser("dtmf7", getPerson);
     await setUserChoice("Entered OTP/Verified/Not-Verified", getPerson);
     try {
-      const aadhaarDocument = await getAdhaarDetailsOtpUpdate(dtmf);
+      const aadhaarDocument = await getAdhaarDetailsOtpUpdate(dtmf,getPerson);
       if (aadhaarDocument) {
-        if (aadhaarDocument.response?.status == "VALID" || aadhaarDocument.response?.message == "Aadhaar Card Exists") {
+        if (aadhaarDocument.response?.status == "success_aadhaar" || aadhaarDocument.response?.message == "Aadhaar Card Exists") {
           return [
             {
               action: "play",

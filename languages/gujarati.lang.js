@@ -14,34 +14,34 @@ export async function getGujDtmf(dtmf, getPerson) {
     const loanAmtSpoken = toSpokenNumber(getPerson?.loanAmt || 0);
     const pendingAmtSpoken = toSpokenNumber(getPerson?.pendingAmt || 0);
     return [
-      {
-        action: "play",
-        file_name: "1713581983362aadhargujaratiwav09a28360-fec2-11ee-9a4e-ddacf980bad8_piopiy.wav", //adhaarcard
-      },
-      {
-        action: "speak",
-        text: `${getPerson.organization}`
-      },
-      {
-        action: "play",
-        file_name: "1712901495278accorrdingTogujaratiwava72091e0-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
-      },
-      {
-        action: "play",
-        file_name: "1712901525547initialAmountgujaratiwavb92b40b0-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
-      },
-      {
-        action: "speak",
-        text: `Rupees...... ${loanAmtSpoken}... `
-      },
-      {
-        action: "play",
-        file_name: "1712901542409pendingAmountgujaratiwavc3380980-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
-      },
-      {
-        action: "speak",
-        text: `Rupees...... ${pendingAmtSpoken}... `
-      },
+      // {
+      //   action: "play",
+      //   file_name: "1713581983362aadhargujaratiwav09a28360-fec2-11ee-9a4e-ddacf980bad8_piopiy.wav", //adhaarcard
+      // },
+      // {
+      //   action: "speak",
+      //   text: `${getPerson.organization}`
+      // },
+      // {
+      //   action: "play",
+      //   file_name: "1712901495278accorrdingTogujaratiwava72091e0-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
+      // },
+      // {
+      //   action: "play",
+      //   file_name: "1712901525547initialAmountgujaratiwavb92b40b0-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
+      // },
+      // {
+      //   action: "speak",
+      //   text: `Rupees...... ${loanAmtSpoken}... `
+      // },
+      // {
+      //   action: "play",
+      //   file_name: "1712901542409pendingAmountgujaratiwavc3380980-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
+      // },
+      // {
+      //   action: "speak",
+      //   text: `Rupees...... ${pendingAmtSpoken}... `
+      // },
       {
         action: "play_get_input",
         file_name:
@@ -622,7 +622,7 @@ export async function getGujDtmfLast(dtmf, getPerson) {
     await setDtmfUser("dtmf7", getPerson);
     await setUserChoice("Entered OTP/Verified/Not-Verified", getPerson);
     try {
-      const aadhaarDocument = await getAdhaarDetailsOtpUpdate(dtmf);
+      const aadhaarDocument = await getAdhaarDetailsOtpUpdate(dtmf, getPerson);
       if (aadhaarDocument) {
         if (aadhaarDocument.response?.status == "VALID" || aadhaarDocument.response?.message == "Aadhaar Card Exists") {
           return [

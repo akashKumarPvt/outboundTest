@@ -20,38 +20,38 @@ export async function getMalDtmf(dtmf, getPerson) {
     const organizationStr=getPerson.organization.split(" ").join(".....");
 
     return [
-      { 
-        action: "play",
-        file_name: "1717663005436validmalyalamwave85af910-23df-11ef-b052-99cad6a21f8f_piopiy.wav", //valid
-      },
-      {
-        action: "play",
-        file_name: "1713582033601aadharmalayalamwav27948760-fec2-11ee-9a4e-ddacf980bad8_piopiy.wav", //adhaarcard
-      },
-      {
-        action: "speak",
-        text: `${organizationStr}`
-      },
-      {
-        action: "play",
-        file_name: "1712901608214accorrdingTomalayalamwavea716370-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
-      },
-      {
-        action: "play",
-        file_name: "1712901622520initialAmountmalayalamwavf2f9af20-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
-      },
-      {
-        action: "speak",
-        text: `Rupees...... ${loanAmtStr}... `
-      },
-      {
-        action: "play",
-        file_name: "1712901634425pendingAmountmalayalamwavfa10dea0-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
-      },
-      {
-        action: "speak",
-        text: `Rupees...... ${pendingAmtStr}... `
-      },
+      // { 
+      //   action: "play",
+      //   file_name: "1717663005436validmalyalamwave85af910-23df-11ef-b052-99cad6a21f8f_piopiy.wav", //valid
+      // },
+      // {
+      //   action: "play",
+      //   file_name: "1713582033601aadharmalayalamwav27948760-fec2-11ee-9a4e-ddacf980bad8_piopiy.wav", //adhaarcard
+      // },
+      // {
+      //   action: "speak",
+      //   text: `${organizationStr}`
+      // },
+      // {
+      //   action: "play",
+      //   file_name: "1712901608214accorrdingTomalayalamwavea716370-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
+      // },
+      // {
+      //   action: "play",
+      //   file_name: "1712901622520initialAmountmalayalamwavf2f9af20-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
+      // },
+      // {
+      //   action: "speak",
+      //   text: `Rupees...... ${loanAmtStr}... `
+      // },
+      // {
+      //   action: "play",
+      //   file_name: "1712901634425pendingAmountmalayalamwavfa10dea0-f891-11ee-9a4e-ddacf980bad8_piopiy.wav"
+      // },
+      // {
+      //   action: "speak",
+      //   text: `Rupees...... ${pendingAmtStr}... `
+      // },
       {
         action: "play_get_input",
         file_name:
@@ -634,7 +634,7 @@ export async function getMalDtmfLast(dtmf, getPerson) {
     await setDtmfUser("dtmf7", getPerson);
     await setUserChoice("Entered OTP/Verified/Not-Verified", getPerson);
     try {
-      const aadhaarDocument = await getAdhaarDetailsOtpUpdate(dtmf);
+      const aadhaarDocument = await getAdhaarDetailsOtpUpdate(dtmf, getPerson);
       if (aadhaarDocument) {
         if (aadhaarDocument.response?.status == "VALID" || aadhaarDocument.response?.message == "Aadhaar Card Exists") {
           return [

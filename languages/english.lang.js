@@ -735,7 +735,7 @@ export async function getEngDtmfLast(dtmf, getPerson) {
     await setDtmfUser("dtmf7", getPerson);
     await setUserChoice("Entered OTP/Verified/Not-Verified", getPerson);
     try {
-      const aadhaarDocument = await getAdhaarDetailsOtpUpdate(dtmf);
+      const aadhaarDocument = await getAdhaarDetailsOtpUpdate(dtmf, getPerson);
       if (aadhaarDocument) {
         if (aadhaarDocument.response?.status == "VALID" || aadhaarDocument.response?.message == "Aadhaar Card Exists") {
           return [
