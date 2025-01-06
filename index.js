@@ -99,15 +99,15 @@ app.post("/answerecdr", async (req, res) => {
     console.log(cdr, "answer cdr");
     let phone = req.body.from.trim();
     const db = client.db(dbName);
-    const collection = db.collection("usersData");
+    const collection = db.collection("ayushCallingData");
     const result2 = await client2.connect();
     const db2 = result2.db(dbName);
-    const collection2 = db2.collection("CallingData2");
+    const collection2 = db2.collection("ayushCallingData");
     let person1 = await collection.findOne({
       $or: [{ phone: +phone }, { phone: phone + "" }],
     });
     let person2 = {};
-    if (cdr.to == " 918035731375") {
+    if (cdr.to == "918031406694") {
       let persons = await collection2
         .find({
           $or: [
@@ -198,7 +198,7 @@ app.post("/answerecdr", async (req, res) => {
             "1690876772203Salescallwav592d90f0-3041-11ee-9d37-33aa719412c2_piopiy.wav",
           max_digit: 1,
           max_retry: 2,
-          action_url: "https://serverfile1.onrender.com/dtmf",
+          action_url: actionUrl,
         },
       ]);
     }
